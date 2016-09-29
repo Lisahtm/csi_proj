@@ -18,7 +18,7 @@ extern char testChannel[4];
 extern int hasManChannelNumber;
 extern int isWriteFile;
 
-
+//create related files
 void initCalculate(){
 
 	if(access("data_out",F_OK)==-1){
@@ -64,6 +64,7 @@ double getSkewness(double arr[]){
 	skewness = skewness/(Group_num * S * S * S);
 	return skewness;
 }
+//kurtosis
 double getKurtosis(double arr[]){
 	int i;
 	double avg=0,var=0,S=0,k=0;
@@ -88,8 +89,6 @@ double getKurtosis(double arr[]){
     k -= 3; 
 	return k;
 }
-//kurtosis
-
 //get correlation 
 double get_corre(double buffer[][RefreshNum],int x,int y,int n,int isRow){
 	double r,nr=0,dr_1=0,dr_2=0,dr_3=0,dr=0;
@@ -156,13 +155,6 @@ double get_selected_row(double* arr,int n){
 double get_selected_column(double* arr,int n){
 	return calculate_median(arr,n);
 }
-//push buffer 
-void push_sampling(double buffer[][RefreshNum],int seq,double data[]){
-	int index = getProjectedIndex(seq),i;
-	for(i = 0;i<RefreshNum;i++){
-		buffer[index][i] = data[i];
-	}
-}
 //push buffer from new version (just add the new one in the front)
 void push_sampling_plus(double buffer[][RefreshNum],int seq,double data[]){
 	int window_size = sample_f*sample_T;
@@ -185,28 +177,6 @@ int isFull(int seq){
 		return 1;
 	}else{
 		return 0;
-	}
-}
-//get the index of the buffer
-int getProjectedIndex(int seq){
-	int package =  sample_f*sample_T;
-	int shift = sample_shift;
-	//first time there is no data in buffer
-	if(seq < package){
-		return seq;
-	}else{
-		return (package-shift)+((seq-package)%shift);
-	}
-	
-}
-//push the buffer forward
-void adjust_buffer(double buffer[][RefreshNum]){
-	int total_num = sample_f*sample_T,i,j;
-	int shift = sample_shift;
-	for(i = sample_shift;i<total_num;i++){
-		for(j = 0;j < RefreshNum;j++){
-			buffer[i-shift][j] = buffer[i][j];
-		}
 	}
 }
 void quiksort(double* a,int low,int high)
@@ -239,7 +209,7 @@ void quiksort(double* a,int low,int high)
 		return;
 	}
 }
-//get the median from an array
+//Get the median from an array
 double calculate_median(double* arr,int n)
 {
 	//sort first
@@ -257,7 +227,7 @@ double calculate_median(double* arr,int n)
 	free(number);
 	return result;
 }
-//isTestChannel
+//User can select the channel calculated
 int isTestChannel(int index){
 	if(testChannel[index] == '1'){
 		return 1;
@@ -265,9 +235,9 @@ int isTestChannel(int index){
 		return 0;
 	}
 }
+//previous binary form of the data
 int previousFT[3] = {0,0,0};
-int previousIndex[3]={-1,-1,-1};
-//multi thread
+//multi thread calculation
 void calculateM(void *arg){
 	int ABC_index;
 	int currentFT=0;
@@ -293,13 +263,14 @@ void calculateM(void *arg){
 	printf("%d:",param->wave_index);
 	for(ABC_index = 0;ABC_index<ChannelNum;ABC_index++){	
 		/**************calculate correlation coeffient******************/
+		/**************We can select the calculated channel ourselves******************/
 		if(isTestChannel(ABC_index)){
 			FTtmp[ABC_index] = getJudgeIndex(param->buffer[ABC_index],ABC_index,param->wave_index,param->seq);
 		}
 	}
 	currentFT = getSelectedJudgeIndex(FTtmp);
 	// printf("wave:%d\n",currentFT);
-	/***LOCK to ensure the wave calculating is in order********/
+	/***LOCK to ensure that the wave is calculated is in order********/
 	if(param->pre_lock&&param->wave_index!=0){
 		pthread_mutex_lock(param->pre_lock);//make sure previous one is done
 	}
@@ -313,7 +284,7 @@ void calculateM(void *arg){
 		pthread_mutex_unlock(param->pre_lock);
 		pthread_mutex_destroy(param->pre_lock);//previous lock is useless,free it;		
 	}
-	//**********end filter the wave**************
+	/**********end filter the wave**************/
 	gettimeofday(&tpend,NULL);
 	timeuse = 1000000*(tpend.tv_sec-tpstart.tv_sec)+tpend.tv_usec-tpstart.tv_usec;
 	timeuse/=1000000;
@@ -323,7 +294,7 @@ void calculateM(void *arg){
 	free(arg);
 	// printf("%d\n",param->wave_index);
 }
-//Channel A,B,C has its own judgement,this will return the judgement result from the result of A,B,C
+//We get three values from Channel A,B,C, and we have a rule to achieve final result from the values of A,B,C
 int getSelectedJudgeIndex(int data[]){
 	int sum = 0,i;
 	for(i = 0;i<ChannelNum;i++){
@@ -336,7 +307,7 @@ int getSelectedJudgeIndex(int data[]){
 	}
 }
 
-//get transformed data to calculate correlations,take the median and then judge whether it has man or not
+//Use transformed data to calculate correlations of both row and column, then turn results into binary value
 int getJudgeIndex(double buffer[][RefreshNum],int type,int wave_index,int seq){
 	int row_num = sample_f*sample_T;
 	int i,j;
@@ -358,7 +329,7 @@ int getJudgeIndex(double buffer[][RefreshNum],int type,int wave_index,int seq){
 			row_result[row_index++]=get_corre(buffer,i,j,RefreshNum,1);
 		}
 	}
-	//getmedian
+	//get median
 	row_final = get_selected_row(row_result,row_index);
 	//column calculate
 	for(i = 0;i < RefreshNum;i++ ){
@@ -366,6 +337,7 @@ int getJudgeIndex(double buffer[][RefreshNum],int type,int wave_index,int seq){
 			column_result[column_index++]=get_corre(buffer,i,j,row_num,0);
 		}
 	}
+	//get median
 	column_final = get_selected_row(column_result,column_index);
 	//
 	// insert_group(row_final,column_final,param->group_t,param->group_f,param->group_index);
@@ -377,8 +349,8 @@ int getJudgeIndex(double buffer[][RefreshNum],int type,int wave_index,int seq){
 	time(&timeT);
 	p = localtime(&timeT);
 	if(isWriteFile){
-		fprintf(basep[type],"%02d:%02d:%02d %d %.6lf %d\n",p->tm_hour,p->tm_min,p->tm_sec,wave_index,tmpvalue,result);
-		// fprintf(basep[type],"%.4lf %.4lf\n",row_final,column_final);
+		// fprintf(basep[type],"%02d:%02d:%02d %d %.6lf %d\n",p->tm_hour,p->tm_min,p->tm_sec,wave_index,tmpvalue,result);
+		fprintf(basep[type],"%.4lf %.4lf\n",row_final,column_final);
 		fflush(basep[type]);		
 	}
 	/************Print the data to the screen************************/
@@ -395,7 +367,7 @@ int getJudgeIndex(double buffer[][RefreshNum],int type,int wave_index,int seq){
 	return result;
 
 }
-//
+//Calculate in single thread
 void calculate(double buffer[][RefreshNum],double group_t[],double group_f[],int type,int hasTimestamp,int group_index,int wave_index){
 	int row_num = sample_f*sample_T;
 	int i,j;
@@ -451,7 +423,6 @@ void calculate(double buffer[][RefreshNum],double group_t[],double group_f[],int
 
 	print_next_filter(timestamp_current,currentFT,previousFT[type],type,wave_index);
 	previousFT[type] = currentFT;
-	previousIndex[type]++;
 	//**********end filter the wave**************
 
 

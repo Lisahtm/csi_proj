@@ -1,2 +1,2 @@
-﻿1.add the comments of every code line
-2.delete the messy code
+﻿1.修改注释
+2.删除一些没用的函数

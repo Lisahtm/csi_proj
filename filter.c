@@ -10,27 +10,28 @@
 
 extern int errno;
 
-double binary_threshold = 0.9;
-int short_len = 10;
-int dist_len = 50;
+double binary_threshold = 0.9;//二分波的阈值
+int short_len = 10; //小于short_len的都是短波
+int dist_len = 50; //两个波间隔的距离的阈值
 
-int pre_index[3] = {-1,-1,-1};
-int wave_len[3]={0,0,0};
-int pre_wave_len[3] = {0,0,0};
+int pre_index[3] = {-1,-1,-1};//前面相邻的波的末尾的index
+int wave_len[3]={0,0,0};//目前的波的长度
+int pre_wave_len[3] = {0,0,0}; //前面相邻的波的波长
 int has_first_short[3] = {0,0,0};//此波之前是否有短波（长度没有达到阈值的波）
-int isCurrentLong[3] = {0,0,0};
+int isCurrentLong[3] = {0,0,0}; //目前的波已经断定为长波（长度大于等于short_len）
 int isIntervalLong[3] = {0,0,0};//当前的波是否比阈值大;
-int smallConjunLen[3] = {0,0,0};
+int smallConjunLen[3] = {0,0,0};//如果短波相互合并后的长度
 extern FILE *fpR[3];
 extern int isWriteFile;
 pthread_t pid,pid2;
 
 int hasMan = 0;//判断是否有人的状态符
 
-
+//Get a value from the correlations of the row and column of the matrix
 double enlarge_tranform(double t,double f){
 	return t*exp(-0.1*f);
 }
+
 int binary_transform(double data){
 	if(data < binary_threshold)
 		return 1;

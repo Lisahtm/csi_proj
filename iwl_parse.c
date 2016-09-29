@@ -220,10 +220,7 @@ void analyzeData(double tmpReceived[][RefreshNum],int hasTimestamp){
 			//printf("\n");
 			group_index=0;
 		}
-		//reloop A B C
-		for(ABC_index = 0;ABC_index<ChannelNum;ABC_index++){
-			// adjust_buffer(buffer[ABC_index]);
-		}
+
 	}
 
 

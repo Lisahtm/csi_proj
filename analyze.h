@@ -33,15 +33,12 @@ void print_next_filter(int timestamp,int current,int previous,int type,int wave_
 void initCalculate();
 void terminate();
 double calculate_median(double* arr,int n);
-int getProjectedIndex(int seq);
 double get_corre(double buffer[][RefreshNum],int x,int y,int n,int isRow);
 
 double get_selected_row(double* arr,int n);
 double get_selected_column(double* arr,int n);
 
-void push_sampling(double buffer[][RefreshNum],int seq,double data[]);
 int isFull(int seq);
-void adjust_buffer(double buffer[][RefreshNum]);
 
 void quiksort(double* a,int low,int high);
 int getJudgeIndex(double buffer[][RefreshNum],int type,int wave_index,int seq);
